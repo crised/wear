@@ -82,6 +82,8 @@ public class LocationEditTextPreference extends EditTextPreference {
                 // SettingsActivity in this way, we can ensure the result of the Place Picker
                 // intent comes to the right place for us to process it.
                 Activity settingsActivity = (SettingsActivity) context;
+                /*
+                ***********DEPRECATED***
                 try {
                     settingsActivity.startActivityForResult(
                             builder.build(context), SettingsActivity.PLACE_PICKER_REQUEST);
@@ -96,7 +98,7 @@ public class LocationEditTextPreference extends EditTextPreference {
                     // by responding to these exceptions in the right moment. But I prefer a cleaner
                     // user experience, which is why you check all of this when the app resumes,
                     // and then disable/enable features based on that availability.
-                }
+                }*/
             }
         });
 
