@@ -249,8 +249,7 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
         if (mGoogleApiClient == null || s == null) return;
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/count");
         putDataMapReq.getDataMap().putString(HIGH_KEY, s);
-        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest(); //setUrgent
-        //putDataReq.setUrgent();
+        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
         PendingResult<DataApi.DataItemResult> pendingResult =
                 Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
         Log.d("TAG", "sendHighToWear:" + s);
@@ -267,5 +266,17 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
         PendingResult<DataApi.DataItemResult> pendingResult =
                 Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
         Log.d("TAG", "sendLowToWear:" + s);
+    }
+
+    private void wakeDataBinder() {
+
+        PutDataMapRequest removeLow = PutDataMapRequest.create("/count");
+        removeLow.getDataMap().remove(LOW_KEY);
+        Wearable.DataApi.putDataItem(mGoogleApiClient, removeLow.asPutDataRequest());
+        PutDataMapRequest removeHigh = PutDataMapRequest.create("/count");
+        removeHigh.getDataMap().remove(HIGH_KEY);
+        Wearable.DataApi.putDataItem(mGoogleApiClient, removeHigh.asPutDataRequest());
+
+
     }
 }

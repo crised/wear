@@ -59,12 +59,19 @@ public class MyWatchFace extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
 
+    // For Data coming from the phone
+    private static final String LOW_KEY = "LOW_KEY";
+    private static final String HIGH_KEY = "HIGH_KEY";
+    public static String LOW_WATCH_FACE, HIGH_WATCH_FACE;
+
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d("SERVICE", "Wearable Service!");
         Intent i = new Intent(this, WatchListenerActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        LOW_WATCH_FACE = "";
+        HIGH_WATCH_FACE = "";
         startActivity(i);
     }
 
@@ -273,9 +280,13 @@ public class MyWatchFace extends CanvasWatchFaceService {
             String text = mAmbient
                     ? String.format("%d:%02d", mTime.hour, mTime.minute)
                     : String.format("%d:%02d", mTime.hour, mTime.minute);
-            canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
-            String text2 = "On";
-            canvas.drawText(text2, mXOffset + 50, mYOffset + 100, mTextPaint);
+            canvas.drawText(text, mXOffset + 30, mYOffset, mTextPaint);
+            if (!LOW_WATCH_FACE.isEmpty())
+                canvas.drawText(LOW_WATCH_FACE, mXOffset + 50, mYOffset + 100, mTextPaint);
+            if (!HIGH_WATCH_FACE.isEmpty())
+                canvas.drawText(HIGH_WATCH_FACE, mXOffset + 200, mYOffset + 100, mTextPaint);
+            Log.d("MyWatchFace", "WatchFace : " + HIGH_WATCH_FACE + "  " + LOW_WATCH_FACE);
+
         }
 
         /**

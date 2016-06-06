@@ -9,10 +9,11 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
-import com.google.android.gms.wearable.DataItem;
-import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
+
+import static com.example.android.sunshine.app.MyWatchFace.HIGH_WATCH_FACE;
+import static com.example.android.sunshine.app.MyWatchFace.LOW_WATCH_FACE;
 
 public class WatchListenerActivity extends Activity implements
         DataApi.DataListener,
@@ -24,15 +25,12 @@ public class WatchListenerActivity extends Activity implements
     private static final String HIGH_KEY = "HIGH_KEY";
     static final String TAG = "PIPE";
 
-
     private GoogleApiClient mGoogleApiClient;
-    private int count = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_watch_listener);
-
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApiIfAvailable(Wearable.API)
                 .addConnectionCallbacks(this)
@@ -40,8 +38,6 @@ public class WatchListenerActivity extends Activity implements
                 .build();
         Log.d(TAG, "ACTIVITY CREATED");
         mGoogleApiClient.connect();
-
-
     }
 
     @Override
@@ -54,6 +50,7 @@ public class WatchListenerActivity extends Activity implements
     public void onConnected(Bundle bundle) {
         Log.d(TAG, "Connected!!");
         Wearable.DataApi.addListener(mGoogleApiClient, this);
+
     }
 
     @Override
@@ -66,16 +63,16 @@ public class WatchListenerActivity extends Activity implements
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
         Log.d(TAG, "DataItem changed!!");
-        for (DataEvent event : dataEvents) {
-            DataItem item = event.getDataItem();
-            if (item.getUri().getPath().compareTo("/count") == 0) {
-                DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                updateHigh(dataMap.getString(HIGH_KEY));
-                updateLow(dataMap.getString(LOW_KEY));
 
-            } else if (event.getType() == DataEvent.TYPE_DELETED) {
-                // DataItem deleted
-            }
+        for (DataEvent event : dataEvents) {
+
+            String highMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getString(HIGH_KEY);
+            String lowMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getString(LOW_KEY);
+            if (highMap != null) HIGH_WATCH_FACE = highMap;
+            if (lowMap != null) LOW_WATCH_FACE = lowMap;
+            Log.d(TAG, "DataItem : " + HIGH_WATCH_FACE + "  " + LOW_WATCH_FACE);
+
+
         }
     }
 
@@ -83,25 +80,12 @@ public class WatchListenerActivity extends Activity implements
     public void onConnectionSuspended(int i) {
         Log.d(TAG, "Suspended!!");
 
-
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.d(TAG, "Failed! " + connectionResult.toString());
-
-
     }
 
-    private void updateHigh(String s) {
-        Log.d(TAG, "High: " + s);
 
-
-    }
-
-    private void updateLow(String s) {
-        Log.d(TAG, "Low: " + s);
-
-
-    }
 }
