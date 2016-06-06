@@ -20,6 +20,7 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +29,13 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.example.android.sunshine.app.data.WeatherContract;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
+
+import static com.example.android.sunshine.app.MainActivity.mGoogleApiClient;
 
 /**
  * {@link ForecastAdapter} exposes a list of weather forecasts
@@ -119,6 +127,7 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
         }
     }
 
+
     @Override
     public void onBindViewHolder(ForecastAdapterViewHolder forecastAdapterViewHolder, int position) {
         mCursor.moveToPosition(position);
@@ -171,12 +180,14 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
         double high = mCursor.getDouble(ForecastFragment.COL_WEATHER_MAX_TEMP);
         String highString = Utility.formatTemperature(mContext, high);
         forecastAdapterViewHolder.mHighTempView.setText(highString);
+        if (position == 0) sendHighToWear(highString);
         forecastAdapterViewHolder.mHighTempView.setContentDescription(mContext.getString(R.string.a11y_high_temp, highString));
 
         // Read low temperature from cursor
         double low = mCursor.getDouble(ForecastFragment.COL_WEATHER_MIN_TEMP);
         String lowString = Utility.formatTemperature(mContext, low);
         forecastAdapterViewHolder.mLowTempView.setText(lowString);
+        if (position == 0) sendLowToWear(lowString);
         forecastAdapterViewHolder.mLowTempView.setContentDescription(mContext.getString(R.string.a11y_low_temp, lowString));
 
         mICM.onBindViewHolder(forecastAdapterViewHolder, position);
@@ -225,5 +236,36 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
             ForecastAdapterViewHolder vfh = (ForecastAdapterViewHolder) viewHolder;
             vfh.onClick(vfh.itemView);
         }
+    }
+
+
+    //Android Wear Logic
+    private static final String LOW_KEY = "LOW_KEY";
+    private static final String HIGH_KEY = "HIGH_KEY";
+
+    // Create a data map and put data in it
+    private void sendHighToWear(String s) {
+
+        if (mGoogleApiClient == null || s == null) return;
+        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/count");
+        putDataMapReq.getDataMap().putString(HIGH_KEY, s);
+        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest(); //setUrgent
+        //putDataReq.setUrgent();
+        PendingResult<DataApi.DataItemResult> pendingResult =
+                Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
+        Log.d("TAG", "sendHighToWear:" + s);
+    }
+
+    // Create a data map and put data in it
+    private void sendLowToWear(String s) {
+
+        if (mGoogleApiClient == null || s == null) return;
+        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/count");
+        putDataMapReq.getDataMap().putString(LOW_KEY, s);
+        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest(); //setUrgent
+        //putDataReq.setUrgent();
+        PendingResult<DataApi.DataItemResult> pendingResult =
+                Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
+        Log.d("TAG", "sendLowToWear:" + s);
     }
 }

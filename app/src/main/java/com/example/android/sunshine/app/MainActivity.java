@@ -25,7 +25,6 @@ import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.util.Pair;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.support.wearable.companion.WatchFaceCompanion;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -115,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             }
         }
 
-        preparePipe();
+        connectGoogleApiClient();
 
 
     }
@@ -159,10 +158,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             }
             mLocation = location;
         }
-        /*
-        Wearable
-         */
-        increaseCounter();
+
     }
 
     @Override
@@ -213,16 +209,14 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
     }
 
     /*
-    Wear Logic
-     */
+Wear Logic
+*/
     final String TAG = "PIPE";
-    private static final String COUNT_KEY = "com.example.key.count";
+
+    public static GoogleApiClient mGoogleApiClient;
 
 
-    private GoogleApiClient mGoogleApiClient;
-    private int count = 0;
-
-    private void preparePipe() {
+    private void connectGoogleApiClient() {
 
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -250,19 +244,8 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
 
         mGoogleApiClient.connect();
 
-        increaseCounter();
-
 
     }
 
-    // Create a data map and put data in it
-    private void increaseCounter() {
-        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/count");
-        putDataMapReq.getDataMap().putInt(COUNT_KEY, count++);
-        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest(); //setUrgent
-        //putDataReq.setUrgent();
-        PendingResult<DataApi.DataItemResult> pendingResult =
-                Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
-        Log.d(TAG, "PutDataMapReq");
-    }
+
 }

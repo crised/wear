@@ -19,7 +19,9 @@ public class WatchListenerActivity extends Activity implements
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
 
-    private static final String COUNT_KEY = "com.example.key.count";
+    //Android Wear Logic
+    private static final String LOW_KEY = "LOW_KEY";
+    private static final String HIGH_KEY = "HIGH_KEY";
     static final String TAG = "PIPE";
 
 
@@ -31,7 +33,6 @@ public class WatchListenerActivity extends Activity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_watch_listener);
 
-
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApiIfAvailable(Wearable.API)
                 .addConnectionCallbacks(this)
@@ -39,6 +40,7 @@ public class WatchListenerActivity extends Activity implements
                 .build();
         Log.d(TAG, "ACTIVITY CREATED");
         mGoogleApiClient.connect();
+
 
     }
 
@@ -65,13 +67,12 @@ public class WatchListenerActivity extends Activity implements
     public void onDataChanged(DataEventBuffer dataEvents) {
         Log.d(TAG, "DataItem changed!!");
         for (DataEvent event : dataEvents) {
-            if (event.getType() == DataEvent.TYPE_CHANGED) {
-                DataItem item = event.getDataItem();
-                if (item.getUri().getPath().compareTo("/count") == 0) {
-                    DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                    updateCount(dataMap.getInt(COUNT_KEY));
-                    dataMap.remove(COUNT_KEY);
-                }
+            DataItem item = event.getDataItem();
+            if (item.getUri().getPath().compareTo("/count") == 0) {
+                DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                updateHigh(dataMap.getString(HIGH_KEY));
+                updateLow(dataMap.getString(LOW_KEY));
+
             } else if (event.getType() == DataEvent.TYPE_DELETED) {
                 // DataItem deleted
             }
@@ -87,13 +88,20 @@ public class WatchListenerActivity extends Activity implements
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        Log.d(TAG, "Failed! " + connectionResult());
+        Log.d(TAG, "Failed! " + connectionResult.toString());
 
 
     }
 
-    // Our method to update the count
-    private void updateCount(int c) {
-        Log.d("TAG", String.valueOf(c));
+    private void updateHigh(String s) {
+        Log.d(TAG, "High: " + s);
+
+
+    }
+
+    private void updateLow(String s) {
+        Log.d(TAG, "Low: " + s);
+
+
     }
 }
