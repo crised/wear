@@ -17,6 +17,8 @@ package com.example.android.sunshine.app;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
@@ -30,10 +32,13 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
+
+import java.io.ByteArrayOutputStream;
 
 import static com.example.android.sunshine.app.MainActivity.mGoogleApiClient;
 
@@ -147,6 +152,8 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
 
         if (Utility.usingLocalGraphics(mContext)) {
             forecastAdapterViewHolder.mIconView.setImageResource(defaultImage);
+            //Wear
+            sendImageToWear(defaultImage);
         } else {
             Glide.with(mContext)
                     .load(Utility.getArtUrlForWeatherCondition(mContext, weatherId))
@@ -242,6 +249,7 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
     //Android Wear Logic
     private static final String LOW_KEY = "LOW_KEY";
     private static final String HIGH_KEY = "HIGH_KEY";
+    private static final String IMG_KEY = "IMG_KEY";
 
     // Create a data map and put data in it
     private void sendHighToWear(String s) {
@@ -268,15 +276,21 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
         Log.d("TAG", "sendLowToWear:" + s);
     }
 
-    private void wakeDataBinder() {
+    private void sendImageToWear(int icon) {
 
-        PutDataMapRequest removeLow = PutDataMapRequest.create("/count");
-        removeLow.getDataMap().remove(LOW_KEY);
-        Wearable.DataApi.putDataItem(mGoogleApiClient, removeLow.asPutDataRequest());
-        PutDataMapRequest removeHigh = PutDataMapRequest.create("/count");
-        removeHigh.getDataMap().remove(HIGH_KEY);
-        Wearable.DataApi.putDataItem(mGoogleApiClient, removeHigh.asPutDataRequest());
+        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/count");
+        Bitmap iconBitmap = BitmapFactory.decodeResource(mContext.getResources(), icon);
+        putDataMapReq.getDataMap().putAsset(IMG_KEY, createAssetFromBitmap(iconBitmap));
+        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest(); //setUrgent
+        Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
+        Log.d("TAG", "sendImageToWear");
 
 
+    }
+
+    private static Asset createAssetFromBitmap(Bitmap bitmap) {
+        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream);
+        return Asset.createFromBytes(byteStream.toByteArray());
     }
 }

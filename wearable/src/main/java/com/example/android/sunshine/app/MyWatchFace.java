@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -35,6 +36,8 @@ import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
+
+import com.google.android.gms.wearable.Asset;
 
 import java.lang.ref.WeakReference;
 import java.util.TimeZone;
@@ -59,10 +62,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
 
-    // For Data coming from the phone
-    private static final String LOW_KEY = "LOW_KEY";
-    private static final String HIGH_KEY = "HIGH_KEY";
     public static String LOW_WATCH_FACE, HIGH_WATCH_FACE;
+    public static Bitmap ICON_WATCH_FACE;
 
     @Override
     public void onCreate() {
@@ -106,6 +107,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
         Paint mTextPaint;
+        Paint mIconPaint;
         boolean mAmbient;
         Time mTime;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
@@ -145,6 +147,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
+
+            mIconPaint = new Paint();
+            mIconPaint.setColor(resources.getColor(R.color.icon_sunshine));
 
             mTime = new Time();
         }
@@ -285,6 +290,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 canvas.drawText(LOW_WATCH_FACE, mXOffset + 50, mYOffset + 100, mTextPaint);
             if (!HIGH_WATCH_FACE.isEmpty())
                 canvas.drawText(HIGH_WATCH_FACE, mXOffset + 200, mYOffset + 100, mTextPaint);
+            if (ICON_WATCH_FACE != null)
+                canvas.drawBitmap(ICON_WATCH_FACE, mXOffset, mYOffset + 200, mIconPaint);
             Log.d("MyWatchFace", "WatchFace : " + HIGH_WATCH_FACE + "  " + LOW_WATCH_FACE);
 
         }
