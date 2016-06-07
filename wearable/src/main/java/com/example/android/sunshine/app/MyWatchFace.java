@@ -25,6 +25,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -294,12 +295,12 @@ public class MyWatchFace extends CanvasWatchFaceService implements
                     ? String.format("%d:%02d", mTime.hour, mTime.minute)
                     : String.format("%d:%02d", mTime.hour, mTime.minute);
             canvas.drawText(text, mXOffset + 30, mYOffset, mTextPaint);
-            if (!low.isEmpty())
+            if (low != null)
                 canvas.drawText(low, mXOffset + 50, mYOffset + 100, mTextPaint);
-            if (!high.isEmpty())
+            if (high != null)
                 canvas.drawText(high, mXOffset + 200, mYOffset + 100, mTextPaint);
             if (iconWatch != null)
-                canvas.drawBitmap(iconWatch, mXOffset, mYOffset + 200, mIconPaint);
+                canvas.drawBitmap(iconWatch, mXOffset + 100, mYOffset + 100, mIconPaint);
             Log.d("MyWatchFace", "WatchFace : " + high + "  " + low);
 
         }
@@ -376,7 +377,7 @@ public class MyWatchFace extends CanvasWatchFaceService implements
             String highMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getString(HIGH_KEY);
             String lowMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getString(LOW_KEY);
             Asset asset = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getAsset(IMG_KEY);
-            if (asset != null) iconWatch = loadBitmapFromAsset(asset);
+            if (asset != null) iconWatch = getResizedBitmap(loadBitmapFromAsset(asset), 50, 50);
             if (highMap != null) high = highMap;
             if (lowMap != null) low = lowMap;
             Log.d(TAG, "DataItem : " + high + "  " + low);
@@ -405,6 +406,23 @@ public class MyWatchFace extends CanvasWatchFaceService implements
         }
         // decode the stream into a bitmap
         return BitmapFactory.decodeStream(assetInputStream);
+    }
+
+    public Bitmap getResizedBitmap(Bitmap bm, int newWidth, int newHeight) {
+        int width = bm.getWidth();
+        int height = bm.getHeight();
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // CREATE A MATRIX FOR THE MANIPULATION
+        Matrix matrix = new Matrix();
+        // RESIZE THE BIT MAP
+        matrix.postScale(scaleWidth, scaleHeight);
+
+        // "RECREATE" THE NEW BITMAP
+        Bitmap resizedBitmap = Bitmap.createBitmap(
+                bm, 0, 0, width, height, matrix, false);
+        bm.recycle();
+        return resizedBitmap;
     }
 
     @Override
