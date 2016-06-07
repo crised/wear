@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -37,8 +38,16 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.Asset;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.Wearable;
 
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +56,10 @@ import java.util.concurrent.TimeUnit;
  * Digital watch face with seconds. In ambient mode, the seconds aren't displayed. On devices with
  * low-bit ambient mode, the text is drawn without anti-aliasing in ambient mode.
  */
-public class MyWatchFace extends CanvasWatchFaceService {
+public class MyWatchFace extends CanvasWatchFaceService implements
+        DataApi.DataListener,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
@@ -62,18 +74,14 @@ public class MyWatchFace extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
 
-    public static String LOW_WATCH_FACE, HIGH_WATCH_FACE;
-    public static Bitmap ICON_WATCH_FACE;
+    String low, high;
+    Bitmap iconWatch;
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d("SERVICE", "Wearable Service!");
-        Intent i = new Intent(this, WatchListenerActivity.class);
-        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        LOW_WATCH_FACE = "";
-        HIGH_WATCH_FACE = "";
-        startActivity(i);
+        prepareComms();
     }
 
     @Override
@@ -286,13 +294,13 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     ? String.format("%d:%02d", mTime.hour, mTime.minute)
                     : String.format("%d:%02d", mTime.hour, mTime.minute);
             canvas.drawText(text, mXOffset + 30, mYOffset, mTextPaint);
-            if (!LOW_WATCH_FACE.isEmpty())
-                canvas.drawText(LOW_WATCH_FACE, mXOffset + 50, mYOffset + 100, mTextPaint);
-            if (!HIGH_WATCH_FACE.isEmpty())
-                canvas.drawText(HIGH_WATCH_FACE, mXOffset + 200, mYOffset + 100, mTextPaint);
-            if (ICON_WATCH_FACE != null)
-                canvas.drawBitmap(ICON_WATCH_FACE, mXOffset, mYOffset + 200, mIconPaint);
-            Log.d("MyWatchFace", "WatchFace : " + HIGH_WATCH_FACE + "  " + LOW_WATCH_FACE);
+            if (!low.isEmpty())
+                canvas.drawText(low, mXOffset + 50, mYOffset + 100, mTextPaint);
+            if (!high.isEmpty())
+                canvas.drawText(high, mXOffset + 200, mYOffset + 100, mTextPaint);
+            if (iconWatch != null)
+                canvas.drawBitmap(iconWatch, mXOffset, mYOffset + 200, mIconPaint);
+            Log.d("MyWatchFace", "WatchFace : " + high + "  " + low);
 
         }
 
@@ -328,4 +336,87 @@ public class MyWatchFace extends CanvasWatchFaceService {
             }
         }
     }
+
+
+    //Android Wear Logic
+    private static final String LOW_KEY = "LOW_KEY";
+    private static final String HIGH_KEY = "HIGH_KEY";
+    private static final String IMG_KEY = "IMG_KEY";
+
+    static final String TAG = "PIPE";
+
+    private GoogleApiClient mGoogleApiClient;
+
+
+    private void prepareComms() {
+
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApiIfAvailable(Wearable.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
+        mGoogleApiClient.connect();
+    }
+
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        Log.d(TAG, "Connected!!");
+        Wearable.DataApi.addListener(mGoogleApiClient, this);
+
+    }
+
+
+    @Override
+    public void onDataChanged(DataEventBuffer dataEvents) {
+        Log.d(TAG, "DataItem changed!!");
+
+        for (DataEvent event : dataEvents) {
+
+            String highMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getString(HIGH_KEY);
+            String lowMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getString(LOW_KEY);
+            Asset asset = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getAsset(IMG_KEY);
+            if (asset != null) iconWatch = loadBitmapFromAsset(asset);
+            if (highMap != null) high = highMap;
+            if (lowMap != null) low = lowMap;
+            Log.d(TAG, "DataItem : " + high + "  " + low);
+
+
+        }
+    }
+
+    private Bitmap loadBitmapFromAsset(Asset asset) {
+        if (asset == null) {
+            throw new IllegalArgumentException("Asset must be non-null");
+        }
+        ConnectionResult result =
+                mGoogleApiClient.blockingConnect(5000, TimeUnit.MILLISECONDS);
+        if (!result.isSuccess()) {
+            return null;
+        }
+        // convert asset into a file descriptor and block until it's ready
+        InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
+                mGoogleApiClient, asset).await().getInputStream();
+        mGoogleApiClient.disconnect();
+
+        if (assetInputStream == null) {
+            Log.w(TAG, "Requested an unknown Asset.");
+            return null;
+        }
+        // decode the stream into a bitmap
+        return BitmapFactory.decodeStream(assetInputStream);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.d(TAG, "Suspended!!");
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.d(TAG, "Failed! " + connectionResult.toString());
+    }
+
+
 }
